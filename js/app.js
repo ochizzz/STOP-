@@ -95,80 +95,73 @@
      КАРТА ГОРОДА
      ===================================================== */
   function seeded(seed) { let s = seed; return () => (s = s * 16807 % 2147483647, (s - 1) / 2147483646); }
-  const BANDS = (() => {
-    const { rows, river, road } = CITY, hr = road / 2;
-    return [
-      [0, rows[0] - hr, 'taxi'], [rows[0] + hr, rows[1] - hr, 'taxi'], [rows[1] + hr, rows[2] - hr, 'wedding'],
-      [rows[2] + hr, river[0], 'wedding'], [river[1], rows[3] - hr, 'goose'], [rows[3] + hr, rows[4] - hr, 'goose'],
-      [rows[4] + hr, rows[5] - hr, 'cow'], [rows[5] + hr, CITY.h, 'cow'],
-    ];
-  })();
+  /* Спокойная «навигаторская» карта: одна палитра, акцент — только знаки заданий */
+  const MAPC = {
+    land: '#EEEBE4', road: '#FFFFFF', casing: '#DAD5CA', water: '#BFDDF0', waterEdge: '#A7CDE6',
+    text: '#8E897E', textSoft: '#A9A497',
+    tint: { taxi: '#E9E7E2', wedding: '#F1E7E9', goose: '#E0ECD7', cow: '#EEE8D7' },
+    foot: { taxi: '#DEDAD2', wedding: '#E8DADD' },
+  };
+  const RIVER_D = 'M-10,452 C110,428 240,548 410,498 L410,548 C240,598 110,478 -10,504 Z';
+  function districtAt(y) { const r = CITY.rows; return y < r[1] ? 'taxi' : y < 476 ? 'wedding' : y < r[4] ? 'goose' : 'cow'; }
   function buildCity() {
-    const { w, h, cols, rows, river, road } = CITY, hr = road / 2;
+    const { w, h, cols, rows } = CITY, RW = 18, hr = RW / 2;
     const rand = seeded(20261126);
-    const xs = [[0, cols[0] - hr], [cols[0] + hr, cols[1] - hr], [cols[1] + hr, cols[2] - hr], [cols[2] + hr, w]];
     let s = `<defs>
-      <pattern id="field" width="12" height="12" patternUnits="userSpaceOnUse" patternTransform="rotate(35)"><rect width="12" height="12" fill="#9BD85B"/><rect width="6" height="12" fill="#C9E86B"/></pattern>
+      <clipPath id="riverClip"><path d="${RIVER_D}"/></clipPath>
+      <filter id="soft" x="-40%" y="-40%" width="180%" height="180%"><feDropShadow dx="0" dy="2" stdDeviation="2.2" flood-color="#1F2433" flood-opacity=".22"/></filter>
     </defs>`;
-    s += `<rect width="${w}" height="${h}" fill="#454C66"/>`;
-    const landmarks = { taxi: '🚕', wedding: '💒', goose: '🎡', cow: '🐄' };
-    const usedLm = {};
-    for (const [y0, y1, th] of BANDS) {
-      const T = THEMES[th];
-      for (const [x0, x1] of xs) {
-        const bx = x0 + 3, by = y0 + 3, bw = x1 - x0 - 6, bh = y1 - y0 - 6;
-        if (bw < 20 || bh < 20) continue;
-        s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="10" fill="${T.walk}" stroke="${INK}" stroke-width="2.5"/>`;
-        const gx = bx + 6, gy = by + 6, gw = bw - 12, gh = bh - 12;
-        if (th === 'cow' && rand() < .55) {
-          s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="7" fill="url(#field)"/>`;
-        } else s += `<rect x="${gx}" y="${gy}" width="${gw}" height="${gh}" rx="7" fill="${T.ground}"/>`;
-        // содержимое
-        if (th === 'goose' || (th === 'cow' && rand() < .4)) {
-          const n = 2 + rndSeed(rand, 4);
-          if (th === 'goose' && gw > 70 && gh > 40 && rand() < .5) s += `<ellipse cx="${gx + gw / 2}" cy="${gy + gh / 2}" rx="${gw / 4}" ry="${gh / 4}" fill="#38C6FF" stroke="${INK}" stroke-width="2.5"/>`;
-          for (let i = 0; i < n; i++) {
-            const tx = gx + 10 + rand() * (gw - 20), ty = gy + 10 + rand() * (gh - 20), tr = 7 + rand() * 5;
-            s += `<circle cx="${tx + 3}" cy="${ty + 4}" r="${tr}" fill="rgba(27,31,59,.2)"/><circle cx="${tx}" cy="${ty}" r="${tr}" fill="#2FBF4A" stroke="${INK}" stroke-width="2"/><circle cx="${tx - tr * .3}" cy="${ty - tr * .3}" r="${tr * .4}" fill="#5CE06F"/>`;
-          }
-        } else if (th !== 'cow' || rand() < .5) {
-          // крыши
-          const parts = gw > gh ? Math.max(1, Math.round(gw / 60)) : Math.max(1, Math.round(gh / 60));
-          for (let i = 0; i < parts; i++) {
-            let rx, ry, rw, rh;
-            if (gw > gh) { rw = gw / parts - 6; rh = gh - 10; rx = gx + 3 + i * gw / parts; ry = gy + 3; }
-            else { rw = gw - 10; rh = gh / parts - 6; rx = gx + 3; ry = gy + 3 + i * gh / parts; }
-            if (rw < 14 || rh < 14) continue;
-            const c = T.roofs[rndSeed(rand, T.roofs.length)];
-            s += `<rect x="${rx + 3}" y="${ry + 6}" width="${rw}" height="${rh}" rx="4" fill="rgba(27,31,59,.22)"/>`;
-            s += `<rect x="${rx}" y="${ry + 4}" width="${rw}" height="${rh}" rx="4" fill="${shade(c, -.3)}" stroke="${INK}" stroke-width="2"/>`;
-            s += `<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="4" fill="${c}" stroke="${INK}" stroke-width="2"/>`;
-            if (rw > 24 && rh > 24 && rand() < .6) s += `<rect x="${rx + rw - 14}" y="${ry + 5}" width="9" height="8" rx="1.5" fill="#E6EAF2" stroke="${INK}" stroke-width="1.5"/>`;
-          }
-        } else {
-          // амбар
-          const bwid = Math.min(gw - 14, 50), bhei = Math.min(gh - 14, 34), ax = gx + (gw - bwid) / 2, ay = gy + (gh - bhei) / 2;
-          s += `<rect x="${ax}" y="${ay + 4}" width="${bwid}" height="${bhei}" rx="3" fill="#A32A12" stroke="${INK}" stroke-width="2"/><rect x="${ax}" y="${ay}" width="${bwid}" height="${bhei}" rx="3" fill="#D84315" stroke="${INK}" stroke-width="2"/><line x1="${ax}" y1="${ay + bhei / 2}" x2="${ax + bwid}" y2="${ay + bhei / 2}" stroke="#fff" stroke-width="2"/>`;
+    s += `<rect width="${w}" height="${h}" fill="${MAPC.land}"/>`;
+    // мягкие подложки районов (границы проходят по дорогам)
+    s += `<rect x="0" y="0" width="${w}" height="${rows[1]}" fill="${MAPC.tint.taxi}"/>`;
+    s += `<rect x="0" y="${rows[1]}" width="${w}" height="${480 - rows[1]}" fill="${MAPC.tint.wedding}"/>`;
+    s += `<rect x="0" y="480" width="${w}" height="${rows[4] - 480}" fill="${MAPC.tint.goose}"/>`;
+    s += `<rect x="0" y="${rows[4]}" width="${w}" height="${h - rows[4]}" fill="${MAPC.tint.cow}"/>`;
+    // кварталы
+    const xs = [[0, cols[0] - hr], [cols[0] + hr, cols[1] - hr], [cols[1] + hr, cols[2] - hr], [cols[2] + hr, w]];
+    const ys = [[0, rows[0] - hr]]; for (let i = 0; i < rows.length - 1; i++) ys.push([rows[i] + hr, rows[i + 1] - hr]); ys.push([rows[rows.length - 1] + hr, h]);
+    for (const [y0, y1] of ys) for (const [x0, x1] of xs) {
+      const d = districtAt((y0 + y1) / 2), bx = x0 + 5, by = y0 + 5, bw = x1 - x0 - 10, bh = y1 - y0 - 10;
+      if (bw < 16 || bh < 16) continue;
+      if (d === 'taxi' || d === 'wedding') {
+        const nx = Math.max(1, Math.round(bw / 44)), ny = Math.max(1, Math.round(bh / (d === 'taxi' ? 40 : 56)));
+        const cw = bw / nx, ch = bh / ny;
+        for (let i = 0; i < nx; i++) for (let j = 0; j < ny; j++) {
+          if (rand() < .12) continue;
+          s += `<rect x="${(bx + i * cw + 2).toFixed(1)}" y="${(by + j * ch + 2).toFixed(1)}" width="${(cw - 4).toFixed(1)}" height="${(ch - 4).toFixed(1)}" rx="2.5" fill="${MAPC.foot[d]}"/>`;
         }
-        if (!usedLm[th] && bw > 90 && bh > 70) { usedLm[th] = 1; s += `<text x="${bx + bw / 2}" y="${by + bh / 2 + 2}" font-size="30" text-anchor="middle" dominant-baseline="middle">${landmarks[th]}</text>`; }
+      } else if (d === 'goose') {
+        s += `<rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="8" fill="#D3E6C6"/>`;
+        const n = Math.round(bw * bh / 900);
+        for (let i = 0; i < n; i++) s += `<circle cx="${(bx + 8 + rand() * (bw - 16)).toFixed(1)}" cy="${(by + 8 + rand() * (bh - 16)).toFixed(1)}" r="${(3.5 + rand() * 3.5).toFixed(1)}" fill="#BCD7AB"/>`;
+      } else {
+        const n = Math.max(2, Math.round(bw / 22));
+        for (let i = 0; i < n; i++) s += `<rect x="${(bx + i * bw / n + 1).toFixed(1)}" y="${by}" width="${(bw / n - 2).toFixed(1)}" height="${bh}" rx="2" fill="${i % 2 ? '#E5E9D0' : '#EAE2CA'}"/>`;
       }
     }
-    // река и мосты
-    s += `<rect x="0" y="${river[0]}" width="${w}" height="${river[1] - river[0]}" fill="#38C6FF"/>`;
-    s += `<line x1="0" y1="${river[0]}" x2="${w}" y2="${river[0]}" stroke="${INK}" stroke-width="3"/><line x1="0" y1="${river[1]}" x2="${w}" y2="${river[1]}" stroke="${INK}" stroke-width="3"/>`;
-    for (let i = 0; i < 7; i++) { const x = 20 + i * 58, y = river[0] + 14 + (i % 2) * 22; s += `<path d="M${x} ${y} q6 -5 12 0 t12 0" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" opacity=".75"/>`; }
-    for (const c of cols) {
-      s += `<rect x="${c - hr - 3}" y="${river[0] - 4}" width="${road + 6}" height="${river[1] - river[0] + 8}" fill="#454C66" stroke="${INK}" stroke-width="2.5"/>`;
-      s += `<line x1="${c - hr}" y1="${river[0] - 4}" x2="${c - hr}" y2="${river[1] + 4}" stroke="#fff" stroke-width="2" stroke-dasharray="3 3"/><line x1="${c + hr}" y1="${river[0] - 4}" x2="${c + hr}" y2="${river[1] + 4}" stroke="#fff" stroke-width="2" stroke-dasharray="3 3"/>`;
-    }
-    // осевые
-    for (const c of cols) s += `<line x1="${c}" y1="0" x2="${c}" y2="${h}" stroke="#FFD60A" stroke-width="2.5" stroke-dasharray="9 9"/>`;
-    for (const r of rows) s += `<line x1="0" y1="${r}" x2="${w}" y2="${r}" stroke="#FFD60A" stroke-width="2.5" stroke-dasharray="9 9"/>`;
-    // перекрёстки
-    for (const c of cols) for (const r of rows) s += `<rect x="${c - hr}" y="${r - hr}" width="${road}" height="${road}" fill="#4E5675"/><circle cx="${c}" cy="${r}" r="4" fill="#fff" opacity=".55"/>`;
-    // подписи районов
-    const labels = [[185, 'ЦЕНТР'], [335, 'СВАДЕБНЫЙ'], [675, 'ГУСИНЫЙ ПАРК'], [825, 'КОЛХОЗ «ЗАРЯ»']];
-    for (const [y, t] of labels) s += `<text x="${(cols[0] + cols[1]) / 2}" y="${y}" font-family="Rubik,sans-serif" font-weight="900" font-size="13" letter-spacing="1" text-anchor="middle" dominant-baseline="middle" fill="#fff" stroke="${INK}" stroke-width="5" paint-order="stroke" stroke-linejoin="round">${t}</text>`;
+    // пруд в парке
+    s += `<ellipse cx="243" cy="675" rx="22" ry="34" fill="${MAPC.water}" stroke="${MAPC.waterEdge}" stroke-width="1.5"/>`;
+    // река
+    s += `<path d="${RIVER_D}" fill="${MAPC.water}" stroke="${MAPC.waterEdge}" stroke-width="1.5"/>`;
+    // мосты: тёмный кант дороги только над водой
+    for (const c of cols) s += `<rect x="${c - hr - 4}" y="400" width="${RW + 8}" height="220" fill="#C9C2B4" clip-path="url(#riverClip)"/>`;
+    // дороги: кант + белое полотно
+    for (const c of cols) s += `<line x1="${c}" y1="-5" x2="${c}" y2="${h + 5}" stroke="${MAPC.casing}" stroke-width="${RW + 4}"/>`;
+    for (const r of rows) s += `<line x1="-5" y1="${r}" x2="${w + 5}" y2="${r}" stroke="${MAPC.casing}" stroke-width="${RW + 4}"/>`;
+    for (const c of cols) s += `<line x1="${c}" y1="-5" x2="${c}" y2="${h + 5}" stroke="${MAPC.road}" stroke-width="${RW}"/>`;
+    for (const r of rows) s += `<line x1="-5" y1="${r}" x2="${w + 5}" y2="${r}" stroke="${MAPC.road}" stroke-width="${RW}"/>`;
+    // названия улиц
+    const T = (x, y, t, rot, size = 8, fill = MAPC.textSoft, weight = 600, ls = .3) =>
+      `<text x="${x}" y="${y}" ${rot ? `transform="rotate(${rot} ${x} ${y})"` : ''} font-family="Rubik,sans-serif" font-weight="${weight}" font-size="${size}" letter-spacing="${ls}" fill="${fill}" text-anchor="middle" dominant-baseline="central">${t}</text>`;
+    CITY.hStreets.forEach((n, i) => s += T(57, rows[i], n));
+    CITY.vStreets.forEach((n, i) => s += T(cols[i], 185, n, 90));
+    CITY.vStreets.forEach((n, i) => s += T(cols[i], 675, n, 90));
+    // районы
+    const D = [[185, ['ДЕЛОВОЙ', 'ЦЕНТР']], [335, ['СВАДЕБНЫЙ', 'КВАРТАЛ']], [675, ['ГУСИНЫЙ', 'ПАРК']], [825, ['КОЛХОЗ', '«ЗАРЯ»']]];
+    for (const [y, [a, b]] of D) s += T(157, y - 6, a, 0, 9, MAPC.text, 800, 1.6) + T(157, y + 6, b, 0, 9, MAPC.text, 800, 1.6);
+    // точки интереса
+    const POI = [[243, 185, '🚕', 'Таксопарк'], [343, 335, '💒', 'ЗАГС'], [343, 675, '🎡', 'Колесо'], [57, 825, '🐄', 'Ферма']];
+    for (const [x, y, e, n] of POI) s += `<g filter="url(#soft)"><circle cx="${x}" cy="${y}" r="11" fill="#fff"/></g><text x="${x}" y="${y + 1}" font-size="12" text-anchor="middle" dominant-baseline="central">${e}</text>` + T(x, y + 19, n, 0, 7.5, MAPC.text, 700);
     s += `<g id="mkLayer"></g>`;
     $('city').innerHTML = s;
   }
@@ -209,16 +202,16 @@
     const { cols, rows } = CITY;
     let s = '';
     const [hc, hrw] = P.home;
-    s += `<g transform="translate(${cols[hc]},${rows[hrw]})"><circle r="15" fill="#2D7DFF" stroke="${INK}" stroke-width="3"/><text y="1" font-size="17" text-anchor="middle" dominant-baseline="middle">🚓</text></g>`;
+    s += `<g transform="translate(${cols[hc]},${rows[hrw]})"><circle class="pulse" r="16" fill="#2F6FEB" opacity=".18"/><circle r="8.5" fill="#2F6FEB" stroke="#fff" stroke-width="3" filter="url(#soft)"/></g>`;
     for (const m of P.missions) {
       const t = tplById(m.tpl), x = cols[m.ci], y = rows[m.ri];
-      s += `<g class="mk" data-key="${m.key}" transform="translate(${x},${y - 20})"><g class="bob">
-        <ellipse cx="0" cy="24" rx="16" ry="5" fill="rgba(27,31,59,.35)"/>
-        <polygon points="0,-24 24,16 -24,16" fill="#fff" stroke="${INK}" stroke-width="13" stroke-linejoin="round"/>
-        <polygon points="0,-24 24,16 -24,16" fill="#fff" stroke="#FF3B30" stroke-width="7" stroke-linejoin="round"/>
-        <text x="0" y="5" font-size="19" text-anchor="middle" dominant-baseline="middle">${t.icon}</text>
-        <g transform="translate(0,31)"><rect x="-21" y="-9" width="42" height="18" rx="9" fill="#FFD60A" stroke="${INK}" stroke-width="2.5"/>
-        <text x="0" y="1" font-family="Rubik,sans-serif" font-weight="900" font-size="11" text-anchor="middle" dominant-baseline="middle" fill="${INK}">₽${m.coins}</text></g>
+      s += `<g class="mk" data-key="${m.key}" transform="translate(${x},${y - 18})"><g class="bob">
+        <circle cx="0" cy="18" r="3" fill="#1F2433" opacity=".35"/>
+        <g filter="url(#soft)"><polygon points="0,-19 19,13 -19,13" fill="#fff" stroke="#fff" stroke-width="9" stroke-linejoin="round"/></g>
+        <polygon points="0,-19 19,13 -19,13" fill="#fff" stroke="#E5484D" stroke-width="5" stroke-linejoin="round"/>
+        <text x="0" y="3.5" font-size="14" text-anchor="middle" dominant-baseline="central">${t.icon}</text>
+        <g transform="translate(0,-31)"><rect x="-17" y="-7.5" width="34" height="15" rx="7.5" fill="#1F2433"/>
+        <text x="0" y="0.5" font-family="Rubik,sans-serif" font-weight="700" font-size="9" text-anchor="middle" dominant-baseline="central" fill="#fff">₽${m.coins}</text></g>
       </g></g>`;
     }
     $('mkLayer').innerHTML = s;
