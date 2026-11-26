@@ -16,7 +16,7 @@ const TYPES = {
   amb:    { len:54, wid:29, vmax:160, rate:0,  pts:100, color:'#FFFFFF' },
   limo:   { len:66, wid:28, vmax:110, rate:15, pts:25,  icon:'👰', color:'#FFFFFF' },
   wcar:   { len:44, wid:27, vmax:110, rate:15, pts:20,  icon:'🤵', color:'#FFC4DE' },
-  cow:    { len:36, wid:28, vmax:30,  rate:0,  pts:50,  icon:'🐄', animal:30 },
+  cow:    { len:36, wid:28, vmax:30,  rate:0,  pts:50,  icon:'🐄', animal:30, stare:true },
   goose:  { len:20, wid:20, vmax:45,  rate:0,  pts:30,  icon:'🪿', animal:22 },
   tractor:{ len:46, wid:30, vmax:48,  rate:4,  pts:30,  color:'#3DDC5C' },
   clown:  { len:42, wid:29, vmax:115, rate:10, pts:40,  icon:'🤡', color:'#FF5FAE', stalls:true },
@@ -58,6 +58,17 @@ const MISSIONS = [
   { id:'mayor',    icon:'🎩', title:'Проверка от мэра',    desc:'Мэр считает очки. Покажи класс.', goal:{ type:'score', n:400 }, diff:3 },
   { id:'tractor',  icon:'🚜', title:'Тракторный марафон',  desc:'Тракторы едут на выставку. Очень медленно.', theme:'cow', w:{ tractor:40 }, goal:{ type:'cars', n:20 }, diff:1 },
 ];
+/* Первая смена — обучение, выдаётся один раз */
+const INTRO_MISSION = { id:'intro', icon:'🔰', title:'Первая смена', desc:'Свайпни вдоль дороги — по ней поедут машины. Две дороги сразу не пускай.', goal:{ type:'survive', t:30 }, diff:1, spawnMul:1.35, w:{ amb:0, cortege:0, clown:0 } };
+
+/* Как называть участников в причинах провала */
+const NAME = { car:'легковушка', taxi:'такси', amb:'скорая', limo:'лимузин', wcar:'свадебная машина', cow:'корова', goose:'гусь', tractor:'трактор', clown:'клоун-кар', bus:'автобус' };
+const RAM_REASON = {
+  car:   'Легковушка устала ждать и выбрала тебя',
+  clown: 'Клоун-кар переехал тебя. Смешно было только ему',
+};
+const RAM_TYPES = { car:1, clown:1 };
+
 const DIFF_REWARD = { 1:{ coins:60, xp:30 }, 2:{ coins:110, xp:55 }, 3:{ coins:170, xp:85 } };
 
 const GOAL_TEXT = {

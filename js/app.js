@@ -17,7 +17,7 @@
     owned: { hat: ['cap'], uniform: ['blue'], baton: ['classic'] },
     eq: { hat: 'cap', uniform: 'blue', baton: 'classic' },
     settings: { sound: true, vibro: true, effects: true, hints: true },
-    missions: [], home: [1, 2],
+    missions: [], home: [1, 2], loadout: { evac: false, siren: false, donut: false, kit: false },
     stats: { missions: 0, best: 0, cars: 0, crashes: 0, amb: 0, cortege: 0, shifts: 0 },
     daily: { day: '', prog: { cars: 0, missions: 0, amb: 0 }, claimed: {}, bonusDay: '', streak: 0 },
   };
@@ -173,7 +173,7 @@
   }
 
   /* ---------- задания на перекрёстках ---------- */
-  const tplById = id => MISSIONS.find(m => m.id === id);
+  const tplById = id => id === 'intro' ? INTRO_MISSION : MISSIONS.find(m => m.id === id);
   const placeName = m => `${CITY.vStreets[m.ci]} × ${CITY.hStreets[m.ri]}`;
   function genMission() {
     const busy = new Set(P.missions.map(m => m.ci + ':' + m.ri)); busy.add(P.home.join(':'));
@@ -195,6 +195,12 @@
   }
   function ensureMissions() {
     P.missions = P.missions.filter(m => tplById(m.tpl));
+    // самая первая смена — лёгкое обучение рядом с машиной
+    if (P.stats.missions === 0 && !P.missions.some(m => m.tpl === 'intro')) {
+      const [hc, hr] = P.home, ri = hr > 0 ? hr - 1 : hr + 1;
+      P.missions = P.missions.filter(m => !(m.ci === hc && m.ri === ri));
+      P.missions.unshift({ key: 'intro', tpl: 'intro', ci: hc, ri, coins: 80, xp: 40 });
+    }
     while (P.missions.length < 5) { const m = genMission(); if (!m) break; P.missions.push(m); }
     save();
   }
@@ -221,9 +227,21 @@
     Game.audio(); Game.sfx.tap();
     const m = P.missions.find(x => x.key === g.dataset.key); if (m) openMission(m);
   });
-  function boostLine() {
-    const b = [['🏗️', 1 + P.inv.evac], ['🚨', 1 + P.inv.siren], ['🍩', P.inv.donut], ['❤️', 3 + (P.inv.kit > 0 ? 1 : 0)]];
-    return `<div class="boosts">${b.map(([i, n]) => `<span>${i} ×${n}</span>`).join('')}</div>`;
+  // выбор бустеров на смену: берёшь только то, что включил
+  const LOAD = [['evac', '🏗️', 'Эвакуатор'], ['siren', '🚨', 'Сирена'], ['donut', '🍩', 'Пончик'], ['kit', '❤️', 'Аптечка']];
+  function loadoutHTML() {
+    return `<div class="loadout"><small>С собой на смену <i>бесплатно: 🏗️×1 🚨×1</i></small><div class="lchips">${LOAD.map(([k, ic, n]) => {
+      const have = P.inv[k], on = P.loadout[k] && have > 0;
+      return `<button class="lchip ${on ? 'on' : ''} ${have ? '' : 'none'}" data-ld="${k}"><span>${ic}</span><b>${n}</b><em>${have ? '×' + have : 'нет'}</em></button>`;
+    }).join('')}</div></div>`;
+  }
+  function bindLoadout(root) {
+    root.querySelectorAll('[data-ld]').forEach(b => b.onclick = () => {
+      const k = b.dataset.ld;
+      if (!P.inv[k]) { toast('Купи в магазине'); return; }
+      P.loadout[k] = !P.loadout[k]; save();
+      b.classList.toggle('on', P.loadout[k]);
+    });
   }
   function openMission(m) {
     const t = tplById(m.tpl), th = THEMES[t.theme || CITY.rowTheme[m.ri]];
@@ -236,8 +254,9 @@
         <div><small>Награда</small><b>${COIN}${m.coins}</b></div>
         <div><small>Опыт</small><b>⭐${m.xp}</b></div>
       </div>
-      ${boostLine()}
+      ${loadoutHTML()}
       <button class="btn green wide" id="mGo">ЗАСТУПИТЬ НА СМЕНУ</button>`);
+    bindLoadout($('sheet'));
     $('mGo').onclick = () => { closeSheet(); launchMission(m); };
   }
 
@@ -246,11 +265,12 @@
      ===================================================== */
   const BASE = { evac: 1, siren: 1, donut: 0 };
   function launch(cfg, after) {
-    const powers = { evac: BASE.evac + P.inv.evac, siren: BASE.siren + P.inv.siren, donut: BASE.donut + P.inv.donut };
-    let lives = 3; if (P.inv.kit > 0) { P.inv.kit--; lives = 4; }
+    const take = k => P.loadout[k] && P.inv[k] > 0 ? 1 : 0;
+    const powers = { evac: BASE.evac + take('evac'), siren: BASE.siren + take('siren'), donut: BASE.donut + take('donut') };
+    let lives = 3; if (take('kit')) { P.inv.kit--; lives = 4; }
     save();
     $('scrGame').classList.add('on');
-    const firstTime = P.settings.hints && P.stats.shifts < 2;
+    const firstTime = P.settings.hints && (cfg.intro || P.stats.shifts < 2);
     requestAnimationFrame(() => Game.start(Object.assign({
       powers, lives, hints: firstTime,
       zenCD: 14 - 2 * P.up.zen, patience: 1 - .1 * P.up.patience, bonusEvery: 400 - 50 * P.up.bonus,
@@ -265,7 +285,7 @@
   }
   function launchMission(m) {
     const t = tplById(m.tpl);
-    launch({ theme: t.theme || CITY.rowTheme[m.ri], title: t.title, icon: t.icon, goal: t.goal, w: t.w, spawnMul: t.spawnMul, night: t.night },
+    launch({ theme: t.theme || CITY.rowTheme[m.ri], title: t.title, icon: t.icon, goal: t.goal, w: t.w, spawnMul: t.spawnMul, night: t.night, intro: t.id === 'intro', ...(t.id === 'intro' ? { patience: .7 } : {}) },
       res => {
         if (res.win) {
           P.missions = P.missions.filter(x => x.key !== m.key);
@@ -284,7 +304,8 @@
         if (best) P.stats.best = res.score;
         P.coins += coins; const up = addXP(Math.floor(res.score / 20));
         save(); refresh();
-        openModal(`<div class="hazard"></div><h2 class="chunk">СМЕНА ОКОНЧЕНА</h2><p>${res.reason}</p>
+        openModal(`<div class="hazard"></div><h2 class="chunk">СМЕНА ОКОНЧЕНА</h2>
+          ${res.snapshot ? `<div class="shot"><img src="${res.snapshot}" alt=""><span>момент истины</span></div>` : ''}<p class="why">${res.reason}</p>
           <div class="bigscore">${res.score}</div><p>${best ? '🏆 Новый личный рекорд!' : 'Рекорд: ' + P.stats.best}</p>
           <div class="reward"><div><small>Штрафы собраны</small><b>${COIN}${coins}</b></div></div>
           ${up ? `<p>⬆️ Новое звание: <b>${rankFor(P.lvl)}</b> (+100 ₽)</p>` : ''}
@@ -304,8 +325,12 @@
     $('rMap').onclick = backToMap;
   }
   function resultFail(res, retry) {
-    openModal(`<div class="hazard"></div><h2 class="chunk" style="color:#FF3B30">УВОЛЕН!</h2><p>${res.reason}</p>
-      <div class="bigscore">${res.score}</div><p>очков за смену</p>
+    const comfort = Math.max(5, Math.floor(res.score / 15));
+    P.coins += comfort; save(); refresh();
+    openModal(`<div class="hazard"></div><h2 class="chunk" style="color:#FF3B30">УВОЛЕН!</h2>
+      ${res.snapshot ? `<div class="shot"><img src="${res.snapshot}" alt=""><span>момент истины</span></div>` : ''}
+      <p class="why">${res.reason}</p>
+      <div class="reward"><div><small>Очки</small><b>${res.score}</b></div><div><small>За старания</small><b>${COIN}${comfort}</b></div></div>
       <div class="btns"><button class="btn" id="rAgain">ЕЩЁ РАЗ</button><button class="btn white" id="rMap">НА КАРТУ</button></div>`, true);
     $('rAgain').onclick = () => { closeModal(); retry(); };
     $('rMap').onclick = backToMap;
@@ -355,7 +380,9 @@
   $('btnShift').onclick = () => {
     openModal(`<div class="hazard"></div><h2 class="chunk">СВОБОДНАЯ СМЕНА</h2><p>Бесконечный режим. Держись, сколько сможешь.<br>Рекорд: <b>${P.stats.best}</b></p>
       <div class="districts">${Object.entries(THEMES).map(([k, t]) => `<button data-th="${k}" style="background:${t.ground}"><span>${t.icon}</span>${t.name}</button>`).join('')}</div>
+      ${loadoutHTML()}
       <div class="btns"><button class="btn white" id="sClose">ЗАКРЫТЬ</button></div>`);
+    bindLoadout($('modal'));
     $('sClose').onclick = closeModal;
     $$('#modal [data-th]').forEach(b => b.onclick = () => { closeModal(); launchShift(b.dataset.th); });
   };
@@ -533,6 +560,21 @@
     rows.sort((a, b) => b.s - a.s);
     $('board').innerHTML = rows.map((r, i) => `<div class="card brow ${r.me ? 'me' : ''}"><span class="pos">${i + 1}</span><span class="nm">${r.n}</span><span class="sc">${fmt(r.s)}</span></div>`).join('');
   }
+
+  /* ---------- кнопка «назад» на Android ---------- */
+  window.onAndroidBack = () => {
+    if ($('scrGame').classList.contains('on')) {
+      if (Game.isRunning()) { openPause(); return true; }
+      if ($('modal').classList.contains('on') && $('pRes')) { $('pRes').click(); return true; }
+      return true;
+    }
+    if ($('modal').classList.contains('on')) { closeModal(); return true; }
+    if ($('sheet').classList.contains('on')) { closeSheet(); return true; }
+    if (!$('scrMap').classList.contains('active')) { go('scrMap'); return true; }
+    return false;
+  };
+
+  window.onAndroidPause = () => openPause();
 
   /* ---------- старт ---------- */
   Game.init();

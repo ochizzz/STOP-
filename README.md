@@ -22,3 +22,12 @@
 - `js/data.js` — районы, транспорт, задания, магазин, гардероб
 - `js/game.js` — движок перекрёстка
 - `js/app.js` — карта, вкладки, прогресс (localStorage)
+
+## Android (APK)
+Проект-обёртка лежит в `android/`: WebView во весь экран, игра копируется в assets при сборке.
+
+```
+cd android
+./gradlew assembleRelease
+```
+Нужен Android SDK (путь в `android/local.properties`, `sdk.dir=...`). Готовый файл: `android/app/build/outputs/apk/release/app-release.apk` (подписан отладочным ключом — для тестов).

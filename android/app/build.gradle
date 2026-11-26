@@ -1,0 +1,35 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'ai.stop.game'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId 'ai.stop.game'
+        minSdk 26
+        targetSdk 34
+        versionCode 3
+        versionName '2.1'
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+            signingConfig signingConfigs.debug
+        }
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+// Веб-игра лежит в корне репозитория; перед сборкой копируем её в assets
+tasks.register('syncWeb', Sync) {
+    from(rootProject.projectDir.parentFile) {
+        include 'index.html', 'css/**', 'js/**', 'fonts/**'
+    }
+    into "$projectDir/src/main/assets/www"
+}
+preBuild.dependsOn syncWeb
