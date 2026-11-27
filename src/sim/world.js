@@ -99,7 +99,7 @@ export function createWorld(level, o = {}) {
     const c = {
       id: ++uid, type, V, char: charId, ch, path, s: ex.s ?? 0, len: V.len, wid: V.wid,
       vmax: V.vmax * (.93 + rng.next() * .14) * (ch.speed || 1), accel: V.accel * (ch.accel || 1), brake: V.brake,
-      color: ex.color || V.color || rng.pick(V.colors), icon: ex.icon || '', state: 'SPAWNING', granted: false, cleared: false, dead: false,
+      color: ex.color || V.color || (V.colors ? rng.pick(V.colors) : '#F4F1EA'), icon: ex.icon || '', state: 'SPAWNING', granted: false, cleared: false, dead: false,
       wait: 0, totalWait: 0, anger: ex.anger || 0, fuming: false, fume: 0, fumeCd: 0, violation: false, manualGo: false,
       emergency: !!V.emergency, escort: !!ex.escort, group: ex.group || null, hes: 0, stall: 0, stallDone: false, creep: 0, revved: false,
       lineCd: 3 + rng.next() * 5, cells: [], x: 0, y: 0, ang: 0, v: 0, spawnedAt: S.time, visibleAt: null,

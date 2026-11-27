@@ -1,7 +1,7 @@
 {
   "name": "stop-patrol",
   "private": true,
-  "version": "2.2.0",
+  "version": "3.0.0",
   "type": "module",
   "description": "STOP! — мобильная игра про регулировщика",
   "scripts": {
