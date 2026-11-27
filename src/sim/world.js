@@ -12,6 +12,8 @@ import { createResolver } from './resolver.js';
 import { createRng } from './rng.js';
 
 export const W = 490;
+// ширина видимого мира: узкие карты показываем крупнее
+export const worldWidth = mapId => (MAPS[mapId].v + MAPS[mapId].h > 2 ? 460 : 400);
 export const STEP = 1 / 60;
 export const FUME = 1.4;           // предупреждение перед нарушением, сек
 export const PREPARE_T = 1.1;      // жёлтый: новые манёвры не начинаются
@@ -19,8 +21,8 @@ const GAP = 8, MAX_CARS = 42, LINE_GLOBAL_CD = 2.6;
 const ON_PATH = new Set(['SPAWNING', 'MOVING', 'APPROACHING', 'WAITING', 'CHECKING', 'YIELDING', 'CROSSING', 'TURNING', 'EMERGENCY', 'BLOCKED', 'MANUAL_CONTROL', 'BROKEN']);
 
 export function createWorld(level, o = {}) {
-  const H = o.H || 860;
-  const geo = buildGeometry(MAPS[level.map], W, H);
+  const H = o.H || 860, WW = o.W || W;
+  const geo = buildGeometry(MAPS[level.map], WW, H);
   const rng = createRng(o.seed ?? 1);
   const res = createResolver(geo);
   const listeners = [];
@@ -464,7 +466,7 @@ export function createWorld(level, o = {}) {
       if (d < 20) { c.state = 'ESCAPE'; emit('copHit', { id: c.id }); addError({ car: 'Легковушка устала ждать и выбрала тебя', truck: 'Грузовик решил, что ты — объезд' }[c.type] || 'Тебя сбил разъярённый водитель', 'ram', c); }
     } else if (c.state === 'ESCAPE') {
       c.x += Math.cos(c.ang) * 300 * dt; c.y += Math.sin(c.ang) * 300 * dt;
-      if (c.x < -150 || c.x > W + 150 || c.y < -150 || c.y > H + 150) c.dead = true;
+      if (c.x < -150 || c.x > WW + 150 || c.y < -150 || c.y > H + 150) c.dead = true;
     } else if (c.state === 'WRECK') {
       if (!c.critical && S.time - c.wreckAt > 15) { c.critical = true; S.score += SCORE.block; addError('Перекрёсток заблокирован обломками', 'block', c); }
     } else if (c.state === 'TOW') { c.towT -= dt; if (c.towT <= 0) { removeCar(c); res.release(c); } }

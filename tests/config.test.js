@@ -1,53 +1,56 @@
-// Проверка согласованности конфигов: ошибки в данных ловим до запуска игры
+// Согласованность конфигов (п. 22 ТЗ): ошибки в данных ловим до запуска
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import * as D from '../src/config/data.js';
+import { VEHICLES, CHARACTERS } from '../src/config/vehicles.js';
+import { MAPS, THEMES } from '../src/config/maps.js';
+import { LEVELS, DISTRICTS, CHALLENGES } from '../src/config/levels.js';
+import { EVENTS, MODIFIERS } from '../src/config/events.js';
+import { ACHIEVEMENTS, DAILY_POOL, STREAK, REP_TITLES, xpNeed } from '../src/config/economy.js';
+import { ITEMS, CATEGORIES, DEFAULT_EQUIP } from '../src/config/items.js';
+import { GOAL_TEXT, EXTRA_TEXT } from '../src/config/texts.js';
 
-test('у каждого задания есть понятная цель и награда', () => {
-  for (const m of [...D.MISSIONS, D.INTRO_MISSION]) {
-    assert.ok(D.GOAL_TEXT[m.goal.type], `${m.id}: нет текста цели ${m.goal.type}`);
-    assert.ok(D.GOAL_ICON[m.goal.type], `${m.id}: нет иконки цели`);
-    assert.ok(D.DIFF_REWARD[m.diff], `${m.id}: нет награды для сложности ${m.diff}`);
-    if (m.theme) assert.ok(D.THEMES[m.theme], `${m.id}: неизвестный район ${m.theme}`);
+test('транспорт: характеры существуют, параметры осмысленны', () => {
+  for (const [id, v] of Object.entries(VEHICLES)) {
+    assert.ok(v.len > 0 && v.wid > 0 && v.vmax > 0 && v.accel > 0 && v.brake > 0, id);
+    for (const c of Object.keys(v.chars || {})) assert.ok(CHARACTERS[c], `${id}: нет характера ${c}`);
   }
 });
 
-test('id заданий уникальны', () => {
-  const ids = D.MISSIONS.map(m => m.id);
+test('уровни и испытания ссылаются на существующие карты, районы, события и транспорт', () => {
+  const ids = new Set();
+  for (const l of [...LEVELS, ...CHALLENGES]) {
+    assert.ok(!ids.has(l.id), `повтор id ${l.id}`); ids.add(l.id);
+    assert.ok(MAPS[l.map], `${l.id}: карта ${l.map}`);
+    assert.ok(DISTRICTS.find(d => d.id === l.district), `${l.id}: район`);
+    assert.ok(GOAL_TEXT[l.goal.type], `${l.id}: цель`);
+    for (const e of l.events || []) assert.ok(EVENTS[e], `${l.id}: событие ${e}`);
+    for (const m of l.modifiers || []) assert.ok(MODIFIERS[m], `${l.id}: модификатор ${m}`);
+    for (const t of Object.keys(l.spawn.mix || {})) assert.ok(VEHICLES[t], `${l.id}: транспорт ${t}`);
+    for (const e of l.extra || []) assert.ok(EXTRA_TEXT[e.type], `${l.id}: доп. задача ${e.type}`);
+    for (const A of l.spawn.approaches || []) assert.ok(MAPS[l.map].arms.includes(A), `${l.id}: нет стороны ${A}`);
+  }
+});
+
+test('районы: темы, по три уровня, условия открытия', () => {
+  for (const d of DISTRICTS) {
+    assert.ok(THEMES[d.theme], d.id);
+    assert.equal(LEVELS.filter(l => l.district === d.id).length, 3, d.id);
+  }
+  assert.deepEqual(DISTRICTS[0].unlock, {}, 'первый район открыт сразу');
+});
+
+test('магазин: только косметика, уникальные id, бесплатная вещь в каждой категории', () => {
+  const ids = ITEMS.map(i => i.id);
   assert.equal(new Set(ids).size, ids.length);
+  for (const c of CATEGORIES) assert.ok(ITEMS.some(i => i.cat === c.id && i.price === 0), c.id);
+  for (const i of ITEMS) assert.ok(CATEGORIES.some(c => c.id === i.cat) && ['cash', 'tokens'].includes(i.currency), i.id);
+  for (const id of Object.values(DEFAULT_EQUIP)) assert.ok(ids.includes(id));
 });
 
-test('веса появления ссылаются на существующий транспорт', () => {
-  const ok = new Set([...Object.keys(D.TYPES), 'cortege']);
-  for (const [d, w] of Object.entries(D.DISTRICT_W)) {
-    assert.ok(D.THEMES[d], `нет района ${d}`);
-    for (const k of Object.keys(w)) assert.ok(ok.has(k), `${d}: неизвестный тип ${k}`);
-  }
-  for (const m of D.MISSIONS) for (const k of Object.keys(m.w || {})) assert.ok(ok.has(k), `${m.id}: неизвестный тип ${k}`);
-});
-
-test('характеры и названия покрывают транспорт', () => {
-  for (const t of Object.keys(D.TYPES)) assert.ok(D.NAME[t], `нет названия для ${t}`);
-  for (const t of Object.keys(D.RAM_TYPES)) assert.ok(D.TYPES[t] && D.RAM_REASON[t], `таран: ${t}`);
-});
-
-test('районы города существуют', () => {
-  for (const th of D.CITY.rowTheme) assert.ok(D.THEMES[th]);
-  assert.equal(D.CITY.rowTheme.length, D.CITY.rows.length);
-  assert.equal(D.CITY.hStreets.length, D.CITY.rows.length);
-  assert.equal(D.CITY.vStreets.length, D.CITY.cols.length);
-});
-
-test('гардероб: уникальные id и бесплатная стартовая вещь', () => {
-  for (const [cat, items] of Object.entries(D.WARDROBE)) {
-    const ids = items.map(i => i.id);
-    assert.equal(new Set(ids).size, ids.length, cat);
-    assert.ok(items.some(i => i.price === 0), `${cat}: нет бесплатной вещи`);
-  }
-});
-
-test('опыт и звания растут монотонно', () => {
-  for (let l = 1; l < 40; l++) assert.ok(D.xpNeed(l + 1) > D.xpNeed(l));
-  assert.equal(D.rankFor(1), 'Стажёр');
-  assert.equal(D.rankFor(99), 'Генерал жезла');
+test('экономика: таблицы заполнены', () => {
+  assert.equal(STREAK.length, 7);
+  assert.ok(DAILY_POOL.length >= 3);
+  assert.ok(ACHIEVEMENTS.length >= 6);
+  assert.ok(REP_TITLES.length >= 6);
+  for (let l = 1; l < 50; l++) assert.ok(xpNeed(l + 1) > xpNeed(l));
 });

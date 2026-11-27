@@ -3,123 +3,122 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
-<meta name="theme-color" content="#1B1F3B">
-<title>СТОП! Симулятор тупейшего патрульного</title>
+<meta name="theme-color" content="#EEEBE4">
+<title>STOP! — регулировщик</title>
 </head>
 <body>
 <div id="app">
 
-  <!-- ===== КАРТА ===== -->
+  <!-- ===== КАРТА ГОРОДА (главный экран) ===== -->
   <section class="screen active" id="scrMap">
     <div id="mapScroll"><svg id="city" viewBox="0 0 400 1000" preserveAspectRatio="xMidYMin meet"></svg></div>
     <header class="topbar">
-      <div class="profile">
-        <div class="speed" id="lvl">1</div>
-        <div class="plate"><b id="plateName">ЖЕЗЛ 01</b><small id="rankName">Стажёр</small><i class="xp"><u id="xpBar"></u></i></div>
-      </div>
-      <div class="coins"><span class="coin">₽</span><b class="cAmount">0</b></div>
+      <button class="profile" id="btnProfile">
+        <span class="speed" id="lvl">1</span>
+        <span class="pinfo"><b id="plateName">ЖЕЗЛ 01</b><small id="xpText">0 / 100</small><i class="xp"><u id="xpBar"></u></i></span>
+      </button>
+      <div class="wallet"><span class="cur"><i>💵</i><b class="cash">0</b></span><span class="cur tok"><i>⭐</i><b class="tokens">0</b></span></div>
     </header>
     <div class="side left">
-      <button class="sbtn" id="btnBonus"><span class="ic">🎁</span><span class="lb">Бонус</span><i class="badge"></i></button>
+      <button class="sbtn" id="btnStreak"><span class="ic">🎁</span><span class="lb">Награда</span><i class="badge"></i></button>
       <button class="sbtn" id="btnDaily"><span class="ic">📋</span><span class="lb">Задания</span><i class="badge"></i></button>
     </div>
     <div class="side right">
-      <button class="sbtn" id="btnShift"><span class="ic">🚓</span><span class="lb">Смена</span></button>
-      <button class="sbtn" id="btnRadio"><span class="ic">📻</span><span class="lb">Рация</span></button>
+      <button class="sbtn" id="btnChallenges"><span class="ic">⚡</span><span class="lb">Испытания</span></button>
+      <button class="sbtn" id="btnDailyShift"><span class="ic">📅</span><span class="lb">Смена дня</span><i class="badge"></i></button>
+      <button class="sbtn" id="btnEndless"><span class="ic">♾️</span><span class="lb">Без конца</span></button>
     </div>
+    <button class="playbtn" id="btnPlay"><span class="pl">▶</span><span><b>Играть</b><small id="playSub">Первая смена</small></span></button>
   </section>
 
   <!-- ===== МАГАЗИН ===== -->
   <section class="screen page" id="scrShop">
-    <header class="phead"><h2 class="chunk">МАГАЗИН</h2><div class="coins"><span class="coin">₽</span><b class="cAmount">0</b></div></header>
-    <div class="pbody">
-      <h3 class="sec">Бустеры <small>берутся на смену автоматически</small></h3>
-      <div class="grid2" id="shopBoost"></div>
-      <h3 class="sec">Улучшения</h3>
-      <div class="list" id="shopUp"></div>
-      <h3 class="sec">Конфискат</h3>
-      <div id="shopChest"></div>
-    </div>
+    <header class="phead"><h2>Магазин</h2><div class="wallet"><span class="cur"><i>💵</i><b class="cash">0</b></span><span class="cur tok"><i>⭐</i><b class="tokens">0</b></span></div></header>
+    <div class="tabs" id="shopTabs"></div>
+    <div class="pbody"><p class="hint">Только внешний вид. Правила игры за деньги не продаются.</p><div class="grid3" id="shopItems"></div></div>
   </section>
 
   <!-- ===== ГАРДЕРОБ ===== -->
   <section class="screen page" id="scrWardrobe">
-    <header class="phead"><h2 class="chunk">ГАРДЕРОБ</h2><div class="coins"><span class="coin">₽</span><b class="cAmount">0</b></div></header>
+    <header class="phead"><h2>Гардероб</h2></header>
     <div class="pbody">
-      <div class="podium"><div id="copPreview"></div><div class="plate big"><b id="plateName2">ЖЕЗЛ 01</b></div></div>
-      <div class="seg" id="wTabs">
-        <button data-cat="hat" class="on">Шапка</button><button data-cat="uniform">Форма</button><button data-cat="baton">Жезл</button>
-      </div>
+      <div class="preview"><canvas id="copPreview"></canvas><div class="plate" id="plateName2">ЖЕЗЛ 01</div></div>
+      <div class="tabs inline" id="wTabs"></div>
       <div class="grid3" id="wItems"></div>
     </div>
   </section>
 
   <!-- ===== НАСТРОЙКИ ===== -->
   <section class="screen page" id="scrSettings">
-    <header class="phead"><h2 class="chunk">НАСТРОЙКИ</h2></header>
+    <header class="phead"><h2>Настройки</h2></header>
     <div class="pbody">
       <div class="card rows">
         <label class="row"><span>🔊 Звук</span><input type="checkbox" class="sw" data-set="sound"></label>
         <label class="row"><span>📳 Вибрация</span><input type="checkbox" class="sw" data-set="vibro"></label>
         <label class="row"><span>✨ Эффекты <small>тряска, частицы</small></span><input type="checkbox" class="sw" data-set="effects"></label>
         <label class="row"><span>👆 Подсказки</span><input type="checkbox" class="sw" data-set="hints"></label>
+        <div class="row"><span>🖥️ Графика <small>экономичная — без теней, для слабых телефонов</small></span><span class="seg2" id="quality"><button data-q="high">Высокая</button><button data-q="low">Экономичная</button></span></div>
       </div>
       <div class="card rows">
         <div class="row"><span>🚘 Номер патруля</span><input id="nameInput" maxlength="10" autocomplete="off"></div>
         <div class="row"><span>🌐 Язык</span><b>Русский</b></div>
       </div>
       <div class="card rows">
-        <div class="row"><span>🧾 Версия</span><b>2.0 «Жезл»</b></div>
-        <button class="row danger" id="btnReset"><span class="octa sm">СТОП</span><span>Сбросить прогресс</span></button>
+        <div class="row"><span>🎮 Управление</span><small class="rt">Стрелки на поле или свайп к центру — пустить поток. От центра — остановить. Тап по машине — команды.</small></div>
+        <div class="row"><span>🧾 Версия</span><b>3.0</b></div>
+        <button class="row danger" id="btnReset"><span class="octa">STOP</span><span>Сбросить прогресс</span></button>
       </div>
     </div>
   </section>
 
-  <!-- ===== РЕЙТИНГ ===== -->
-  <section class="screen page" id="scrRating">
-    <header class="phead"><h2 class="chunk">РЕЙТИНГ</h2></header>
-    <div class="pbody">
-      <div class="grid2" id="statCards"></div>
-      <h3 class="sec">Доска почёта <small>лучшая свободная смена</small></h3>
-      <div class="list" id="board"></div>
-    </div>
+  <!-- ===== ПРОФИЛЬ ===== -->
+  <section class="screen page" id="scrProfile">
+    <header class="phead"><h2>Профиль</h2></header>
+    <div class="pbody" id="profileBody"></div>
   </section>
 
   <!-- ===== НИЖНЯЯ НАВИГАЦИЯ ===== -->
   <nav id="nav">
     <button data-scr="scrShop"><span class="ic">🛒</span><span>Магазин</span></button>
     <button data-scr="scrWardrobe"><span class="ic">👕</span><span>Гардероб</span></button>
-    <button data-scr="scrMap" class="mapBtn on"><span class="ring"><svg class="mapIc" viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5l5.5-2.5 7 2.5 5.5-2.5v13.5l-5.5 2.5-7-2.5-5.5 2.5z"/><path d="M8.5 4v13.5M15.5 6.5V20"/></svg></span><span>Карта</span><i class="wcount" id="mCount"></i></button>
+    <button data-scr="scrMap" class="mapBtn on"><span class="ring"><svg viewBox="0 0 24 24" width="30" height="30" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6.5l5.5-2.5 7 2.5 5.5-2.5v13.5l-5.5 2.5-7-2.5-5.5 2.5z"/><path d="M8.5 4v13.5M15.5 6.5V20"/></svg></span><span>Город</span></button>
     <button data-scr="scrSettings"><span class="ic">⚙️</span><span>Настройки</span></button>
-    <button data-scr="scrRating"><span class="ic">🏆</span><span>Рейтинг</span></button>
+    <button data-scr="scrProfile"><span class="ic">👤</span><span>Профиль</span></button>
   </nav>
 
-  <!-- ===== ИГРА ===== -->
+  <!-- ===== СМЕНА ===== -->
   <section id="scrGame">
-    <div id="gStage"><canvas id="gCanvas"></canvas>
-      <div class="ghud">
-        <div class="hearts" id="gHearts"></div>
-        <div class="gscore chunk" id="gScore">0</div>
-        <button class="octa" id="gPause" aria-label="пауза">СТОП</button>
-      </div>
-      <div class="goal" id="gGoal"><b></b><span class="bar"><i></i></span></div>
+    <div id="gStage">
+      <canvas id="g3d"></canvas><canvas id="g2d"></canvas>
+      <div id="gArms"></div>
+      <div id="gCard"></div>
+      <div id="gToasts"></div>
     </div>
-    <div id="dragGhost"></div>
-    <div class="gpowers">
-      <button class="pw" id="pwZen"><span class="em">✨</span><span class="lb">Дзен</span><i class="cd"></i></button>
-      <button class="pw" id="pwEvac"><span class="em">🏗️</span><span class="lb">Эвакуатор</span><b class="n">0</b></button>
-      <button class="pw" id="pwSiren"><span class="em">🚨</span><span class="lb">Сирена</span><b class="n">0</b></button>
-      <button class="pw" id="pwDonut"><span class="em">🍩</span><span class="lb">Пончик</span><b class="n">0</b></button>
+    <div class="ghud">
+      <div class="hrow">
+        <div class="hpill err" id="hErrors" title="Ошибки"><b>0</b>/3</div>
+        <div class="hpill main"><span class="sc" id="hScore">0</span><span class="goal" id="hGoal"><b></b><i><u></u></i></span></div>
+        <button class="octa" id="gPause" aria-label="пауза">STOP</button>
+      </div>
+      <div class="hrow small">
+        <div class="meter" id="hChaos"><span>Хаос</span><i><u></u></i></div>
+        <div class="meter" id="hPatience"><span>Терпение</span><i><u></u></i></div>
+      </div>
+      <div id="hTasks"></div>
+    </div>
+    <div class="gtools">
+      <button class="tool" id="tWhistle"><span class="em">📣</span><span class="lb">Свисток</span><i class="cd"></i></button>
+      <button class="tool" id="tZen"><span class="em">✨</span><span class="lb">Дзен</span><i class="cd"></i></button>
+      <button class="tool" id="tSiren"><span class="em">🚨</span><span class="lb">Сирена</span><b class="n">1</b></button>
+      <button class="tool" id="tDonut"><span class="em">🍩</span><span class="lb">Пончик</span><b class="n">1</b></button>
     </div>
   </section>
 
-  <!-- ===== ОКНА ===== -->
   <div class="veil" id="veil"></div>
   <div class="sheet" id="sheet"></div>
   <div class="modal" id="modal"></div>
   <div class="toast" id="toast"></div>
 </div>
-
 <script type="module" src="/src/main.js"></script>
 </body>
 </html>
