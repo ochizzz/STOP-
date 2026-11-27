@@ -1,6 +1,6 @@
 {
   "appId": "ai.stop.game",
-  "appName": "СТОП!",
+  "appName": "STOP!",
   "webDir": "build/web",
   "android": {
     "backgroundColor": "#1B1F3B"

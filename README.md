@@ -31,3 +31,7 @@ npm test               # тесты
 npm run build          # сборка в build/web
 npm run android:apk    # APK (нужен Android SDK, путь в android/local.properties)
 ```
+
+## iOS
+Проект `ios/` (Capacitor, Swift Package Manager) создаётся и обновляется командой `npx cap sync ios`.
+Собрать `.ipa` можно только на Mac с Xcode: открыть `ios/App/App.xcodeproj`, выбрать команду разработчика и запустить на устройстве.
