@@ -1,6 +1,7 @@
 /* ============ СТОП! — движок перекрёстка ============ */
-'use strict';
-const Game = (() => {
+import { THEMES, TYPES, DISTRICT_W, NAME, RAM_REASON, RAM_TYPES, GOAL_TEXT, GOAL_ICON, WARDROBE, INSULTS } from '../config/data.js';
+
+export const Game = (() => {
   const W = 490, R = 66, LANE = 33, OFF = 90, BR = 320, AC = 190;
   const INK = '#1B1F3B', SHADOW = 'rgba(27,31,59,.22)';
   const EMOJI = '"Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif';
@@ -156,7 +157,7 @@ const Game = (() => {
       if (!drag || drag.kind !== kind) return;
       if (!drag.moved && Math.hypot(e.clientX - drag.sx, e.clientY - drag.sy) > 12) {
         if (!canUse(kind)) { end(); return; }
-        drag.moved = true; S.mode = null; ghost.textContent = kind === 'zen' ? '🪄' : '🏗️'; ghost.classList.add('on');
+        drag.moved = true; S.mode = null; ghost.textContent = kind === 'zen' ? '✨' : '🏗️'; ghost.classList.add('on');
       }
       if (drag.moved) {
         ghost.style.transform = `translate(${e.clientX - 28}px,${e.clientY - 62}px)`;
@@ -280,7 +281,7 @@ const Game = (() => {
     if (type === 'goose') {
       if (!laneClear(li, 150)) return false;
       for (let i = 0; i < 3; i++) mk('goose', li, -i * 32);
-      laneTag(li, '🪿 Гуси'); return true;
+      laneTag(li, '🦆 Гуси'); return true;
     }
     if (!laneClear(li, 80)) return false;
     mk(type, li, 0);

@@ -1,6 +1,8 @@
 /* ============ СТОП! — приложение: карта, вкладки, прогресс ============ */
-'use strict';
-(() => {
+import { THEMES, CITY, MISSIONS, INTRO_MISSION, DIFF_REWARD, GOAL_TEXT, GOAL_ICON, BOOSTERS, UPGRADES, CHEST_PRICE, WARDROBE, rankFor, xpNeed, DAILY, RADIO } from '../config/data.js';
+import { Game } from '../game/game.js';
+
+export function startApp() {
   const $ = id => document.getElementById(id);
   const $$ = s => [...document.querySelectorAll(s)];
   const rndI = n => Math.floor(Math.random() * n);
@@ -583,4 +585,4 @@
     const sc = $('mapScroll'), svgH = $('city').getBoundingClientRect().height;
     sc.scrollTop = Math.max(0, CITY.rows[P.home[1]] / CITY.h * svgH - sc.clientHeight / 2);
   });
-})();
+}

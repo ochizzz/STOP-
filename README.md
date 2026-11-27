@@ -16,18 +16,22 @@
 - Скорая, свадебные кортежи, клоун-кары, коровы, гуси, тракторы, автобусы.
 - Задания: продержаться N секунд, набрать очки, пропустить скорые/коров/кортежи, смена без ДТП, ночная смена.
 
-## Файлы
-- `index.html` — разметка экранов
-- `css/style.css` — стиль
-- `js/data.js` — районы, транспорт, задания, магазин, гардероб
-- `js/game.js` — движок перекрёстка
-- `js/app.js` — карта, вкладки, прогресс (localStorage)
+## Структура
+- `index.html` — разметка экранов (точка входа Vite)
+- `src/main.js` — запуск приложения и связь с Android (кнопка «назад», пауза)
+- `src/config/data.js` — районы, транспорт, задания, магазин, гардероб
+- `src/game/game.js` — движок перекрёстка
+- `src/app/app.js` — карта, вкладки, прогресс (localStorage)
+- `src/styles/style.css`, `src/assets/fonts/` — стиль и шрифт Rubik
+- `tests/` — тесты (`node --test`)
+- `android/` — проект Capacitor
 
-## Android (APK)
-Проект-обёртка лежит в `android/`: WebView во весь экран, игра копируется в assets при сборке.
-
+## Команды
 ```
-cd android
-./gradlew assembleRelease
+npm install            # зависимости
+npm run dev            # игра в браузере с автообновлением
+npm test               # тесты
+npm run build          # сборка в build/web
+npm run android:apk    # сборка APK (нужен Android SDK, путь в android/local.properties)
 ```
-Нужен Android SDK (путь в `android/local.properties`, `sdk.dir=...`). Готовый файл: `android/app/build/outputs/apk/release/app-release.apk` (подписан отладочным ключом — для тестов).
+Готовый APK: `android/app/build/outputs/apk/release/app-release.apk`. Подписан отладочным ключом — только для тестов.
